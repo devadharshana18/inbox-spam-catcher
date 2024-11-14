@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Detector</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Spam Detector</h1>
+        <textarea id="emailText" placeholder="Enter text to check" required></textarea>
+        <button id="checkButton" onclick="checkSpam()">Check for Spam</button>
+        <div id="loading" class="loading">Checking...</div>
+        <div id="result" class="result" style="display: none;"></div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:5000/api/check-spam';
+        const emailText = document.getElementById('emailText');
+        const checkButton = document.getElementById('checkButton');
+        const loadingDiv = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
+
+        async function checkSpam() {
+            const text = emailText.value.trim();
+
+            if (!text) {
+                showError('Please enter some text to check');
+                return;
+            }
+
+            // Reset UI
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            checkButton.disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server error');
+                }
+
+                const data = await response.json();
+
+                resultDiv.innerHTML = `Result: <span class="highlight ${data.isSpam ? 'spam' : 'not-spam'}">${data.message}</span>`;
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                showError('Failed to check spam. Please try again.');
+                console.error('Error:', error);
+            } finally {
+                loadingDiv.style.display = 'none';
+                checkButton.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Enable checking when Enter is pressed in textarea
+        emailText.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                checkSpam();
+            }
+        });
+    </script>
+</body>
+
+</html>
